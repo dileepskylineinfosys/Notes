@@ -1,0 +1,68 @@
+Compress image in webp format 
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+servicr -:
+<?php
+
+namespace App\Services;
+
+class ImageCompressService
+{
+    public function resizeAndCompressImage($image, $imageFileName, $finalDestinationPath, $destinationPath, $newWidth = 800, $quality = 85)
+    {
+        $imageName = time() . '_' . $image->getClientOriginalName();
+
+        $image->move($destinationPath, $imageName);
+        // echo "Before optimization: " . $destinationPath . $imageName . PHP_EOL;
+
+        $imageResource = imagecreatefromstring(file_get_contents($destinationPath . $imageName));
+
+        if (!$imageResource) {
+            // echo "Error: Unsupported image format: " . $imageName . PHP_EOL;
+            return;
+        }
+
+        $width = imagesx($imageResource);
+        $height = imagesy($imageResource);
+
+        $newHeight = intval($height * ($newWidth / $width));
+
+        $resizedImage = imagecreatetruecolor($newWidth, $newHeight);
+        imagecopyresampled($resizedImage, $imageResource, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+
+        $optimizedImageName = $finalDestinationPath . $imageFileName;
+        switch (strtolower(pathinfo($imageFileName, PATHINFO_EXTENSION))) {
+            case 'jpeg':
+            case 'jpg':
+                imagejpeg($resizedImage, $optimizedImageName, $quality);
+                break;
+            case 'png':
+                imagepng($resizedImage, $optimizedImageName, $quality);
+                break;
+            case 'gif':
+                imagegif($resizedImage, $optimizedImageName);
+                break;
+            case 'webp':
+                $newWidth = $newWidth * 1; // Increase the width by 50%
+                $newHeight = intval($height * ($newWidth / $width));
+                $resizedImage = imagecreatetruecolor($newWidth, $newHeight);
+                imagecopyresampled($resizedImage, $imageResource, 0, 0, 0, 0, $newWidth, $newHeight, $width, $height);
+                imagewebp($resizedImage, $optimizedImageName, $quality);
+                break;
+
+            default:
+                // echo "Error: Unsupported image format: " . $imageFileName . PHP_EOL;
+                return;
+        }
+
+        imagedestroy($imageResource);
+        imagedestroy($resizedImage);
+
+        // echo "After optimization: " . $optimizedImageName . PHP_EOL;
+
+        unlink($destinationPath . $imageName);
+
+        return $imageFileName;
+    }
+}
+
+
