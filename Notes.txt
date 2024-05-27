@@ -69,4 +69,6 @@ class ImageCompressService
 
 test
 
-https://we.tl/t-1WHv1B7JUN
+    - source ~/.profile
+    - nvm install 16.4.2
+    - nvm use 16.4.2
